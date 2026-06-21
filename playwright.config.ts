@@ -46,6 +46,13 @@ export default defineConfig({
       use: { storageState: STORAGE_STATE },
     },
     {
+      // Feature của sprint đang làm — CHƯA gate release. Promote sang regression khi ổn định.
+      name: 'feature-browser',
+      testMatch: 'tests/feature/browser/**/*.test.ts',
+      dependencies: ['setup'],
+      use: { storageState: STORAGE_STATE },
+    },
+    {
       name: 'regression-browser',
       testMatch: 'tests/regression/browser/**/*.test.ts',
       dependencies: ['setup'],

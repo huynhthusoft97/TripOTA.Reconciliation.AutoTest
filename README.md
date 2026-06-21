@@ -49,7 +49,8 @@ TripOTA.Reconciliation.AutoTest/
 │   │   └── browser/             #   Playwright UI
 │   │       ├── session.test.ts
 │   │       └── system-navigation.test.ts   # smoke toàn hệ thống (33 trang)
-│   └── regression/{api,browser}/   # 📋 Trước release (chờ build)
+│   ├── feature/{api,browser}/      # 🚧 Sprint đang làm — CHƯA gate release (promote khi ổn)
+│   └── regression/{api,browser}/   # 📋 Đã ship & ổn định — gate release
 ├── performance/k6/              # 🚀 Load/stress test (chờ build)
 ├── fixtures/auth.setup.ts       # đăng nhập 1 lần → .auth/<env>.json (storageState)
 ├── lib/
@@ -60,6 +61,28 @@ TripOTA.Reconciliation.AutoTest/
 ├── docs/ (test-strategy · traceability · cicd · how-to-add-testcase)
 ├── prompts/generate-tests-from-spec.md
 └── azure-pipelines.yml          # Azure DevOps pipeline
+```
+
+## Vòng đời test theo sprint (feature → regression)
+
+3 bucket theo **độ ổn định** (tách bạch với việc test cái gì):
+
+| Bucket | Ý nghĩa | Gate |
+|--------|---------|------|
+| **vital** | critical, phải xanh mỗi ngày/PR (ổn định, nhỏ) | PR + mọi release |
+| **feature** | test của **feature sprint đang làm** — còn đổi/flaky | chỉ chạy ở **dev / feature branch**, KHÔNG gate release |
+| **regression** | feature **đã ship & ổn định** | gate **release** (SIT/UAT) |
+
+**Luồng:** viết test ở `tests/feature/{api,browser}/` (gắn tag `@feature`, `@1B`, `@US-1B-0x`) → chạy trên **dev** →
+khi feature **release + xanh ổn định + đáng gate lâu dài** → **promote**: chuyển file sang
+`tests/regression/{api,browser}/1b/` (critical → thêm vào `tests/vital/`), cập nhật `docs/traceability.md`, dọn `feature/`.
+
+> Pass ở `feature/` **chưa đủ** để promote — chỉ promote khi đã chốt scope, hết flaky, và đáng bảo vệ ở mọi release.
+> Map CI: **dev** = vital + feature · **SIT/UAT** = vital + regression · **prod** = vital smoke. (env chọn bằng `TEST_ENV` + Variable Group secret.)
+
+```bash
+npm run test:feature           # API + browser của sprint đang làm
+TEST_ENV=dev npm run test:feature -- --grep @1B   # lọc theo feature/sprint
 ```
 
 ## 3 tầng test
