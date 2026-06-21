@@ -6,9 +6,8 @@
   "description": "Automation test suite cho trang Đối Soát vé 1B (Web UI + API)",
   "scripts": {
     "test": "npm run test:vital",
-    "test:vital": "npm run test:vital:browser",
+    "test:vital": "npm run test:vital:api && npm run test:vital:browser",
     "test:vital:api": "vitest run tests/vital/api",
-    "_note:test:vital:api": "TẠM GỠ khỏi test:vital — chưa có endpoint API thật. Khi có: đổi test:vital về 'npm run test:vital:api && npm run test:vital:browser'.",
     "test:vital:browser": "playwright test --project=vital-browser",
     "test:regression": "npm run test:regression:api && npm run test:regression:browser",
     "test:regression:api": "vitest run tests/regression/api",
@@ -29,7 +28,11 @@
     "demo": "cross-env HEADED=1 SLOWMO=600 playwright test --project=vital-browser --workers=1",
     "demo:login": "cross-env HEADED=1 SLOWMO=700 playwright test --project=vital-browser --workers=1 -g \"phiên đăng nhập\"",
     "demo:headed": "cross-env HEADED=1 playwright test --project=vital-browser --workers=1",
-    "ui": "playwright test --ui"
+    "ui": "playwright test --ui",
+    "sdk": "node scripts/gen-sdk.mjs"
+  },
+  "dependencies": {
+    "axios": "^1.7.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.0",

@@ -9,5 +9,6 @@
     "skipLibCheck": true,
     "types": ["vitest/globals", "node"]
   },
-  "include": ["vital", "regression", "lib"]
+  "include": ["tests", "fixtures", "lib"],
+  "exclude": ["node_modules", "sdk"]
 }

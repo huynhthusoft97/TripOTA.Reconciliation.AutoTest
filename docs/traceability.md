@@ -26,7 +26,7 @@ Chú thích: tên file (không đuôi) = test đã có; ⬜ = cần bổ sung (s
 
 - `describe`/`test` mở đầu bằng `[VITAL]` / `[REGRESSION]` + mã `US-1B-0x`.
 - Comment đầu file ghi: `// US-1B-0x | spec: <mệnh đề>`.
-- API: `loadSample(...)` từ `lib/sample-data/`. UI: page object trong `lib/browser/pages/`.
+- API: gọi qua SDK (`lib/api-config` lấy token) + assert response. UI: page object trong `lib/browser/pages/`.
 
 ## Bộ dữ liệu data-driven (regression API)
 

@@ -31,8 +31,9 @@ Mỗi test gắn `US-1B-0x` + spec clause (xem `traceability.md`). Mục tiêu 1
 không orphan test. Defect liên kết ngược về requirement.
 
 ## 6. Test data
-Bộ mẫu trong `lib/sample-data/` đại diện đủ biến thể nghiệp vụ. Nguyên tắc: không dùng dữ
-liệu vé/PNR thật ngoài môi trường cho phép; ẩn danh khi cần. Dữ liệu nạp qua `loadSample()`.
+Ưu tiên đối chiếu dữ liệu có sẵn trên môi trường (vd SIT) qua SDK. Endpoint cần payload đầu vào
+thì tạo fixture theo schema SDK ngay trong test. Nguyên tắc: không dùng dữ liệu vé/PNR thật
+ngoài môi trường cho phép; ẩn danh khi cần.
 
 ## 7. Môi trường & CI/CD
 `TEST_ENV` (local/sit) auto-detect URL. Secrets qua **Azure DevOps Variable Group/Key Vault**,

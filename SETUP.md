@@ -43,7 +43,7 @@ Tạo các thư mục theo 3 tầng + tách API/Browser:
 mkdir -p tests/vital/api tests/vital/browser \
          tests/regression/api tests/regression/browser \
          performance/k6 \
-         lib/browser/pages lib/sample-data \
+         lib/browser/pages \
          docs prompts
 ```
 
@@ -61,9 +61,8 @@ TripOTA.Reconciliation.AutoTest/
 │   └── browser/    # luồng đối soát đầy đủ
 ├── performance/k6/ # load + stress
 ├── lib/
-│   ├── api-client.ts · env.ts · fixtures.ts · assertions.ts · index.ts
-│   ├── browser/pages/   # Page Objects (login, list, detail)
-│   └── sample-data/     # NDC, non-NDC, refund, PNR, vé nối, thiếu dữ liệu
+│   ├── env.ts · assertions.ts · api-config.ts · index.ts
+│   └── browser/pages/   # Page Objects (login, app-shell, list)
 ├── docs/           # test-strategy.md · traceability.md
 ├── prompts/        # generate-tests-from-spec.md
 └── azure-pipelines.yml  · docs/cicd.md
@@ -183,9 +182,8 @@ cp .env.example .env.sit
 
 ```
 TEST_ENV=sit
-API_BASE_URL=            # auto theo TEST_ENV nếu để trống
-SALE_REPORT_URL=
-WEB_URL=                 # URL web UI đối soát
+API_BASE_URL=            # host API BE (auto theo TEST_ENV nếu để trống)
+WEB_URL=                 # host App (web UI đối soát)
 TEST_USER=qc@tripota.vn
 TEST_PASSWORD=           # KHÔNG commit
 AUTH_TOKEN=              # KHÔNG commit
@@ -202,11 +200,9 @@ TIMEOUT_BROWSER=30000
 Tạo theo thứ tự (xem code mẫu trong repo):
 
 1. `lib/env.ts` — đọc `TEST_ENV`, auto-detect URL theo môi trường.
-2. `lib/api-client.ts` — HTTP client (`api.get/post/put`) gắn token & timeout.
-3. `lib/assertions.ts` — assertion nghiệp vụ: `assertTicketParsed`, `assertTicketReconciled`, `assertPolicyApplied`.
-4. `lib/fixtures.ts` — `loadSample(name)` nạp dữ liệu mẫu; `DATASETS` cho data-driven.
-5. `lib/browser/pages/` — Page Objects: `LoginPage`, `ReconciliationListPage`, `TicketDetailPage`.
-6. `lib/sample-data/*.sample.json` — NDC, non-NDC, refund, PNR, vé nối, thiếu dữ liệu.
+2. `lib/api-config.ts` — login lấy JWT + `Configuration` cho SDK (dùng ở API test).
+3. `lib/assertions.ts` — assertion nghiệp vụ (vd `assertTicketParsed`).
+4. `lib/browser/pages/` — Page Objects: `LoginPage`, `AppShell`, `ListPage`.
 
 ---
 
@@ -238,7 +234,7 @@ Mở Claude Code tại repo và dùng prompt `prompts/generate-tests-from-spec.m
 Với mỗi US chưa có test (xem docs/traceability.md, ô ⬜):
 - Sinh test Vitest (API) và/hoặc Playwright (UI) theo style file mẫu.
 - Phủ happy path + edge: thiếu dữ liệu, duplicate, NDC vs non-NDC, refund, vé nối.
-- Dùng loadSample(...) cho API; page object cho UI.
+- API: gọi qua SDK (lib/api-config lấy token) + assert response; UI: page object.
 - Gắn tag [VITAL]/[REGRESSION] + US-1B-0x; comment đầu file ghi spec clause.
 - Cập nhật docs/traceability.md.
 Endpoint/selector chưa rõ → để TODO + hỏi, KHÔNG bịa.
@@ -254,11 +250,11 @@ Mở Claude Code tại thư mục `doi-soat/` và dán:
 Giúp tôi dựng test project TripOTA.Reconciliation.AutoTest/ ngang cấp TripOTA.Reconciliation.Api, TripOTA.Reconciliation.App và TripOTA.Reconciliation.Spec.
 1) Kiểm tra Node>=20, npm, git, k6 (báo cách cài nếu thiếu).
 2) Tạo cấu trúc thư mục vital/{api,browser}, regression/{api,browser}, performance/k6,
-   lib/{browser/pages,sample-data}, docs, prompts; thêm azure-pipelines.yml.
+   lib/browser/pages, docs, prompts; thêm azure-pipelines.yml.
 3) npm init + cài: typescript @types/node vitest @vitest/coverage-v8 cross-env @playwright/test.
    Chạy npx playwright install chromium.
 4) Tạo tsconfig/vitest.config/playwright.config + package.json scripts như SETUP.md.
-5) Tạo .env.example và lib/ (env, api-client, assertions, fixtures, page objects).
+5) Tạo .env.example và lib/ (env, api-config, assertions, page objects) + gen SDK.
 6) Chạy npx tsc --noEmit để xác nhận sạch.
 Xin xác nhận trước mỗi lệnh cài đặt. Không tạo test thật ở bước này.
 ```

@@ -42,33 +42,24 @@ npm test                            # = vital
 
 ```
 TripOTA.Reconciliation.AutoTest/
-├── vital/                       # ⚡ Critical hằng ngày (nhanh, phải pass)
-│   ├── api/                     # API health
-│   │   ├── api-health.test.ts
-│   └── browser/                 # UI: login, shell, điều hướng, list screens
-│       ├── login.test.ts · login-invalid.test.ts
-│       ├── home-shell.test.ts · navigate.test.ts
-│       └── sales-policy-list.test.ts
-├── regression/                  # 📋 Trước release (đầy đủ)
-│   ├── api/                     # data-driven 9 work item
-│   │   ├── wi02-parsing.test.ts
-│   │   ├── wi03-ticket-command-non-ndc.test.ts
-│   │   ├── wi07-apply-policy.test.ts
-│   │   └── wi09-conjunction-ticket.test.ts
-│   └── browser/                 # luồng UI đầy đủ
-│       ├── reconcile-flow.test.ts
-│       └── manual-handling.test.ts
-├── performance/k6/              # 🚀 Load/stress test
+├── tests/
+│   ├── vital/                   # ⚡ Critical hằng ngày (nhanh, phải pass)
+│   │   ├── api/                 #   Vitest API (qua SDK)
+│   │   │   └── airline-search.test.ts
+│   │   └── browser/             #   Playwright UI
+│   │       ├── session.test.ts
+│   │       └── system-navigation.test.ts   # smoke toàn hệ thống (33 trang)
+│   └── regression/{api,browser}/   # 📋 Trước release (chờ build)
+├── performance/k6/              # 🚀 Load/stress test (chờ build)
+├── fixtures/auth.setup.ts       # đăng nhập 1 lần → .auth/<env>.json (storageState)
 ├── lib/
-│   ├── api-client.ts · env.ts · fixtures.ts · assertions.ts · index.ts
-│   ├── browser/pages/           # 📄 Page Objects
-│   │   ├── login.page.ts · app-shell.page.ts · list.page.ts
-│   │   ├── reconciliation-list.page.ts · ticket-detail.page.ts
-│   └── sample-data/             # NDC, non-NDC, refund, PNR, vé nối, thiếu dữ liệu
+│   ├── env.ts · assertions.ts · api-config.ts (auth/SDK) · index.ts
+│   └── browser/pages/           # 📄 Page Objects: login · app-shell · list
+├── sdk/                         # client gen từ OpenAPI BE (gitignored — `npm run sdk`)
+├── scripts/                     # ci-vital · build-report · open-report · gen-sdk
 ├── docs/ (test-strategy · traceability · cicd · how-to-add-testcase)
 ├── prompts/generate-tests-from-spec.md
-├── azure-pipelines.yml          # Azure DevOps pipeline
-└── docs/cicd.md                 # chi tiết tích hợp CI/CD
+└── azure-pipelines.yml          # Azure DevOps pipeline
 ```
 
 ## 3 tầng test
@@ -116,22 +107,44 @@ cp .env.example .env.sit
 
 | Biến                              | Mặc định     | Mô tả                                 |
 | --------------------------------- | ------------ | ------------------------------------- |
-| `TEST_ENV`                        | `sit`        | `local` \| `sit`                      |
-| `API_BASE_URL`                    | auto         | API Đối Soát                          |
-| `SALE_REPORT_URL`                 | auto         | Endpoint API Sale Report Daily        |
-| `WEB_URL`                         | auto         | URL Web UI đối soát                   |
+| `TEST_ENV`                        | `sit`        | `local` \| `dev` \| `sit`             |
+| `API_BASE_URL`                    | auto         | Host **API BE** (Vitest API test + gen SDK đọc `/swagger/v1/swagger.json` từ đây) |
+| `WEB_URL`                         | auto         | Host **App** (Playwright UI test)     |
 | `TEST_USER` / `TEST_PASSWORD`     | —            | Tài khoản đăng nhập UI (không commit) |
 | `AUTH_TOKEN`                      | —            | Token gọi API (không commit)          |
 | `TIMEOUT_API` / `TIMEOUT_BROWSER` | 5000 / 30000 | Timeout (ms)                          |
 
 ### URL mặc định theo môi trường
 
-| Env   | API                                   | Web UI                                |
+| Env   | API (BE)                              | Web UI (App)                          |
 | ----- | ------------------------------------- | ------------------------------------- |
 | local | http://localhost:8080                 | http://localhost:3000                 |
-| sit   | reconciliation-app-sit.tripota.com.vn | reconciliation-app-sit.tripota.com.vn |
+| dev   | reconciliation-api-dev.tripota.com.vn | reconciliation-app-dev.tripota.com.vn |
+| sit   | reconciliation-api-sit.tripota.com.vn | reconciliation-app-sit.tripota.com.vn |
 
-> URL SIT đã set sẵn trong `lib/env.ts`. Tài khoản đặt trong `.env.sit` (tự nạp qua dotenv, không commit).
+> URL mặc định set sẵn trong `lib/env.ts` (host **API** ≠ host **App**). Tài khoản đặt trong
+> `.env.<env>` (tự nạp qua dotenv, không commit). dev URL theo pattern — xác nhận khi dùng.
+
+## Gen SDK từ Backend (OpenAPI → TypeScript)
+
+SDK client (typed) sinh từ **Swagger của BE** (`<API_BASE_URL>/swagger/v1/swagger.json`) bằng
+`openapi-generator` (typescript-axios), ra thư mục `sdk/` — dùng cho **Vitest API test**.
+
+```bash
+npm run sdk                      # gen theo TEST_ENV hiện tại (mặc định sit)
+TEST_ENV=dev npm run sdk         # gen từ API dev
+TEST_ENV=local npm run sdk       # gen từ API local
+API_BASE_URL=https://... npm run sdk   # chỉ định host API
+SDK_SPEC=https://.../swagger/v1/swagger.json npm run sdk   # chỉ định thẳng URL spec
+```
+
+Cơ chế (xem `scripts/gen-sdk.mjs`): đọc `API_BASE_URL` theo `TEST_ENV` (giống test) →
+spec = `<API_BASE_URL>/swagger/v1/swagger.json`. Chạy generator qua **JAR + Java**
+(`scripts/gen-sdk.mjs` tự tải JAR về `.openapi-generator-cli/` và tự dò Java).
+
+> **Cần Java** (đã dùng Temurin JDK 17). `sdk/` + `.openapi-generator-cli/` đã **gitignore**
+> (không commit bản sinh) → clone về chạy `npm run sdk` để có lại. BE thêm endpoint → chạy lại
+> `npm run sdk` là client + type tự cập nhật (test thì vẫn viết tay / qua skill add-testcase).
 
 ## Demo / trình diễn (bật browser lên khi cần)
 

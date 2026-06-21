@@ -7,3 +7,7 @@ test-results/
 .env.sit
 *.log
 .DS_Store
+# SDK gen từ OpenAPI (regen bằng `npm run sdk`) — không commit bản sinh.
+sdk/
+# openapi-generator-cli tải JAR về đây.
+.openapi-generator-cli/

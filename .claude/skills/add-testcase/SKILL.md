@@ -11,7 +11,7 @@ description: >-
   "test ... đang fail, sửa giúp".
 ---
 
-# Skill — Thêm / Cập nhật test case (Đối Soát 1B)
+# Skill — Thêm / Cập nhật test case (Đối Soát)
 
 Mục tiêu: QC/Dev chỉ cần mô tả **màn hình + kịch bản** (hoặc **test cần sửa**), skill tự
 dựng/chỉnh test đúng chuẩn dự án `TripOTA.Reconciliation.AutoTest`. KHÔNG bắt người dùng tự viết selector hay code.

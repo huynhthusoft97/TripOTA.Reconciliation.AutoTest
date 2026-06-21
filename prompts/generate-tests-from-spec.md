@@ -12,11 +12,11 @@ Hãy:
    - ../TripOTA.Reconciliation.Spec/CLAUDE.md (cách làm việc)
    - ../TripOTA.Reconciliation.Spec/specs/001-doisoat-1b/spec.md (user stories + acceptance criteria)
    - ../TripOTA.Reconciliation.Spec/knowledge-base/graphify-out/GRAPH_REPORT.md (kiến trúc)
-   - lib/ (api-client, assertions, fixtures) và 1 test mẫu trong tests/vital/ + tests/regression/
+   - lib/ (env, api-config, assertions, page objects) + SDK (sdk/) và 1 test mẫu trong tests/vital/
 2) Với mỗi US chưa có test (xem docs/traceability.md, cột ⬜):
    - Sinh test Vitest theo đúng style file mẫu, đặt vào tests/vital/api hoặc tests/regression/api.
    - Phủ happy path + edge: thiếu dữ liệu, duplicate, NDC vs non-NDC, refund, vé nối.
-   - Dùng loadSample(...) cho dữ liệu; thêm sample mới vào lib/sample-data nếu cần.
+   - Endpoint đọc → assert theo dữ liệu thật trên môi trường; endpoint cần payload → tạo fixture theo schema SDK ngay trong test.
    - Tên describe: [VITAL]/[REGRESSION] + US-1B-0x; comment đầu file ghi spec clause.
 3) Cập nhật docs/traceability.md (đánh dấu test đã tạo).
 4) KHÔNG sửa source code ứng dụng. Endpoint chưa rõ → để TODO + hỏi tôi, đừng bịa.

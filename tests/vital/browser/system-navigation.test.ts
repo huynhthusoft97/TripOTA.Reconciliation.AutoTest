@@ -47,7 +47,8 @@ const PAGES: Pg[] = [
   { name: 'Setting Currency', route: '/currency-setting' },
   { name: 'Setting System - Provider', route: '/provider-system-setting', heading: 'Setting System - Provider', title: 'Setting System - Provider' },
   { name: 'Validate Transaction Information', route: '/ticket-info-configuration', heading: 'Validate Transaction Information', title: 'Validate Transaction Information' },
-  { name: 'Setting Document No', route: '/document-no-setting' },
+  // ⚠️ DEMO: cố tình để FAIL (title sai) cho team xem video trên report. Bỏ field `title` này sau khi demo.
+  { name: 'Setting Document No', route: '/document-no-setting', title: 'DEMO FAIL — title cố tình sai' },
 ];
 
 // Đã đăng nhập sẵn qua storageState (project "setup" — login 1 lần).
