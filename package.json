@@ -1,0 +1,43 @@
+{
+  "name": "TripOTA.Reconciliation.AutoTest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Automation test suite cho trang Đối Soát vé 1B (Web UI + API)",
+  "scripts": {
+    "test": "npm run test:vital",
+    "test:vital": "npm run test:vital:browser",
+    "test:vital:api": "vitest run tests/vital/api",
+    "_note:test:vital:api": "TẠM GỠ khỏi test:vital — chưa có endpoint API thật. Khi có: đổi test:vital về 'npm run test:vital:api && npm run test:vital:browser'.",
+    "test:vital:browser": "playwright test --project=vital-browser",
+    "test:regression": "npm run test:regression:api && npm run test:regression:browser",
+    "test:regression:api": "vitest run tests/regression/api",
+    "test:regression:browser": "playwright test --project=regression-browser",
+    "test:local": "cross-env TEST_ENV=local npm run test:vital",
+    "test:local:api": "cross-env TEST_ENV=local vitest run tests/vital/api",
+    "test:local:browser": "cross-env TEST_ENV=local playwright test --project=vital-browser",
+    "test:sit": "cross-env TEST_ENV=sit npm run test:vital",
+    "test:sit:api": "cross-env TEST_ENV=sit vitest run tests/vital/api",
+    "test:sit:browser": "cross-env TEST_ENV=sit playwright test --project=vital-browser",
+    "test:coverage": "vitest run --coverage",
+    "test:performance": "k6 run performance/k6/report-ingest-load.js",
+    "test:performance:stress": "k6 run performance/k6/api-stress.js",
+    "report:browser": "playwright show-report reports/playwright",
+    "report:build": "node scripts/build-report.mjs",
+    "report:open": "node scripts/open-report.mjs reports/summary.html",
+    "ci:vital": "cross-env TEST_ENV=sit TEST_TIER=Vital node scripts/ci-vital.mjs",
+    "demo": "cross-env HEADED=1 SLOWMO=600 playwright test --project=vital-browser --workers=1",
+    "demo:login": "cross-env HEADED=1 SLOWMO=700 playwright test --project=vital-browser --workers=1 -g \"phiên đăng nhập\"",
+    "demo:headed": "cross-env HEADED=1 playwright test --project=vital-browser --workers=1",
+    "ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^17.4.2",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

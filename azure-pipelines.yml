@@ -1,0 +1,139 @@
+# Azure DevOps Pipeline — Automation Test (Đối Soát 1B)
+# Stack: TypeScript · Vitest (API) · Playwright (Browser) · k6 (Performance)
+# Sinh báo cáo HTML + chụp video/ảnh cho test fail.
+
+trigger:
+  branches:
+    include: [ main, develop ]
+
+pr:
+  branches:
+    include: [ main, develop ]
+
+schedules:
+  - cron: "0 23 * * *"          # 06:00 giờ VN (UTC+7) — nightly vital
+    displayName: Nightly vital
+    branches: { include: [ main ] }
+    always: true
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - group: doisoat-sit-secrets   # SIT_API_BASE_URL, SIT_WEB_URL, SIT_TEST_USER, SIT_TEST_PASSWORD, SIT_AUTH_TOKEN
+  - name: TEST_ENV
+    value: sit
+
+stages:
+# ---------- VITAL: chạy cho PR, CI, nightly ----------
+- stage: Vital
+  displayName: Vital (API + Browser) + Report
+  jobs:
+    - job: vital
+      steps:
+        - task: NodeTool@0
+          inputs: { versionSpec: '20.x' }
+        - script: npm ci
+          displayName: Install dependencies
+        - script: npx playwright install --with-deps chromium
+          displayName: Install Playwright browser
+
+        # Chạy test — KHÔNG dừng pipeline ở đây để còn sinh report + publish artifact
+        - script: npx vitest run tests/vital/api
+          displayName: Vital API (Vitest)
+          continueOnError: true
+          env:
+            API_BASE_URL: $(SIT_API_BASE_URL)
+            AUTH_TOKEN: $(SIT_AUTH_TOKEN)
+        - script: npx playwright test --project=vital-browser
+          displayName: Vital Browser (Playwright — video/ảnh khi fail)
+          continueOnError: true
+          env:
+            WEB_URL: $(SIT_WEB_URL)
+            TEST_USER: $(SIT_TEST_USER)
+            TEST_PASSWORD: $(SIT_TEST_PASSWORD)
+
+        # Sinh HTML report (REPORT_SOFT=1 để bước này không tự fail)
+        - script: REPORT_SOFT=1 node scripts/build-report.mjs
+          displayName: Build HTML report (reports/summary.html)
+          condition: always()
+          env:
+            TEST_TIER: Vital
+            BUILD_URL: $(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)
+
+        # Đưa kết quả lên tab Tests
+        - task: PublishTestResults@2
+          displayName: Publish test results → tab Tests
+          condition: always()
+          inputs:
+            testResultsFormat: JUnit
+            testResultsFiles: 'reports/*-junit.xml'
+            failTaskOnFailedTests: true
+
+        # Lưu báo cáo + video + ảnh + trace làm artifact
+        - task: PublishPipelineArtifact@1
+          displayName: Upload report (HTML + summary)
+          condition: always()
+          inputs: { targetPath: reports, artifact: vital-report }
+        - task: PublishPipelineArtifact@1
+          displayName: Upload video/ảnh/trace của test fail
+          condition: always()
+          inputs: { targetPath: test-results, artifact: vital-test-artifacts }
+
+        # Gate: nếu có test fail → fail pipeline (chặn merge/deploy)
+        - script: node scripts/build-report.mjs
+          displayName: Quality gate (fail nếu có test fail)
+          condition: always()
+
+        # (Tuỳ chọn) Gửi email báo cáo — cần kết nối email/SMTP của tổ chức.
+        # - task: <SendEmail / Office365 / SendGrid>
+        #   inputs: { to: 'qc-team@tripota.com.vn', subject: 'Vital Tests Report', body: reports/summary.html, isHtml: true }
+
+# ---------- REGRESSION: khi merge develop/main (bỏ qua ở PR cho nhanh) ----------
+- stage: Regression
+  displayName: Regression (API + Browser) + Report
+  dependsOn: Vital
+  condition: and(always(), ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+    - job: regression
+      steps:
+        - task: NodeTool@0
+          inputs: { versionSpec: '20.x' }
+        - script: npm ci
+          displayName: Install dependencies
+        - script: npx playwright install --with-deps chromium
+          displayName: Install Playwright browser
+        - script: npx vitest run tests/regression/api
+          displayName: Regression API (Vitest)
+          continueOnError: true
+          env:
+            API_BASE_URL: $(SIT_API_BASE_URL)
+            AUTH_TOKEN: $(SIT_AUTH_TOKEN)
+        - script: npx playwright test --project=regression-browser
+          displayName: Regression Browser (Playwright)
+          continueOnError: true
+          env:
+            WEB_URL: $(SIT_WEB_URL)
+            TEST_USER: $(SIT_TEST_USER)
+            TEST_PASSWORD: $(SIT_TEST_PASSWORD)
+        - script: REPORT_SOFT=1 node scripts/build-report.mjs
+          displayName: Build HTML report
+          condition: always()
+          env:
+            TEST_TIER: Regression
+            BUILD_URL: $(System.CollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)
+        - task: PublishTestResults@2
+          condition: always()
+          inputs:
+            testResultsFormat: JUnit
+            testResultsFiles: 'reports/*-junit.xml'
+            failTaskOnFailedTests: true
+        - task: PublishPipelineArtifact@1
+          condition: always()
+          inputs: { targetPath: reports, artifact: regression-report }
+        - task: PublishPipelineArtifact@1
+          condition: always()
+          inputs: { targetPath: test-results, artifact: regression-test-artifacts }
+        - script: node scripts/build-report.mjs
+          displayName: Quality gate
+          condition: always()

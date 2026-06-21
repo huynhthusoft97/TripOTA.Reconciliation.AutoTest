@@ -1,0 +1,7 @@
+{
+  "reportDate": "2026-06-18",
+  "source": "1B",
+  "tickets": [
+    { "ticketNumber": "0012345678901", "type": "TKT", "isNDC": false, "pnr": "ABC123", "fareAmount": 1500000, "currency": "VND" }
+  ]
+}
